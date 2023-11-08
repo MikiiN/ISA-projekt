@@ -1,0 +1,18 @@
+#ifndef ERROR_H
+#define ERROR_H
+
+#define ARG_ERR_MISSING_FILE 1
+#define ARG_ERR_UNKNOWN_ARG 2
+#define ARG_ERR_MULTIPLE_ARG 3
+#define ARG_ERR_PORT_IS_NOT_NUMBER 4
+#define ARG_ERR_TOO_MUCH_ARGS 5
+
+#define SERVER_ERR_SOCKET_FAILED 9
+#define SERVER_ERR_BIND_FAILED 10
+#define SERVER_ERR_LISTEN 11
+#define SERVER_ERR_ACCEPT_FAILED 12
+#define SERVER_ERR_FORK_FAILED 13
+
+void printError(int errorCode);
+
+#endif
