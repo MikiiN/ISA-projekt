@@ -122,6 +122,18 @@ int BER::encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message){
     if(addMessageLength(resultMessage, message)){
         return ERR;
     }
+    addInt(resultMessage, message.MsgId);
+    resultMessage.push_back(LDAP_BIND_RESPONSE);
+    int responseLength = calculateBindResponseLength(message.BindResponse);
+    if(responseLength > MAX_SHORT_FORM_LENGTH){
+        addLongFormLength(resultMessage, responseLength);
+    }
+    else{
+        resultMessage.push_back(responseLength);
+    }
+    addEnumerated(resultMessage, message.BindResponse.resultCode);
+    addString(resultMessage, message.BindResponse.matchedDN);
+    addString(resultMessage, message.BindResponse.errorMessage);
     return OK;
 }
 
@@ -137,18 +149,66 @@ int BER::addMessageLength(vector<char> &resultMessage, ldap_msg_t &message){
             return ERR;
     }
     if(length > MAX_SHORT_FORM_LENGTH){
-        int lengthOfLength = calculateIntLength(length);
-        resultMessage.push_back(lengthOfLength + LONG_FORM_FLAG);
-        int value;
-        for(int i = lengthOfLength-1; i >= 0; i--){
-            value = length & (BYTE_MASK << (i * BYTE));
-            resultMessage.push_back((char) value);
-        }
+        addLongFormLength(resultMessage, length);
     }
     else{
         resultMessage.push_back(length);
     }
     return OK;
+}
+
+void BER::addInt(vector<char> &resultMessage, int value){
+    resultMessage.push_back(INTEGER);
+    int length = calculateIntLength(value);
+    if(length > MAX_SHORT_FORM_LENGTH){
+        addLongFormLength(resultMessage, length);
+        addLongFormInt(resultMessage, value, length);
+    }
+    else{
+        resultMessage.push_back(length);
+        resultMessage.push_back(value);
+    }
+}
+
+void BER::addEnumerated(vector<char> &resultMessage, int value){
+    resultMessage.push_back(ENUMERATED);
+    int length = calculateIntLength(value);
+    if(length > MAX_SHORT_FORM_LENGTH){
+        addLongFormLength(resultMessage, length);
+        addLongFormInt(resultMessage, value, length);
+    }
+    else{
+        resultMessage.push_back(length);
+        resultMessage.push_back(value);
+    }
+}
+
+void BER::addString(vector<char> &resultMessage, string value){
+    resultMessage.push_back(STRING);
+    int length = (int) value.size();
+    if(length > MAX_SHORT_FORM_LENGTH){
+        addLongFormLength(resultMessage, length);
+    }
+    else{
+        resultMessage.push_back(length);
+    }
+    for(size_t i = 0; i < value.size(); i++){
+        resultMessage.push_back(value[i]);
+    }
+}
+
+void BER::addLongFormLength(vector<char> &resultMessage, int length){
+    int lengthOfLength = calculateIntLength(length);
+    resultMessage.push_back(lengthOfLength + LONG_FORM_FLAG);
+    addLongFormInt(resultMessage, length, lengthOfLength);
+}
+
+void BER::addLongFormInt(vector<char> &resultMessage, int value, int length){
+    int v;
+    for(int i = length-1; i >= 0; i--){
+        v = value & (BYTE_MASK << (i * BYTE));
+        resultMessage.push_back((char) v);
+    }
 }
 
 int BER::calculateBindResponseLength(bind_response_data_t &BindResponse){

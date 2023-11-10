@@ -16,6 +16,9 @@
 #define QUEUE 1
 #define BUFFER_SIZE 256
 
+#define SUCCESS 0
+#define FAILED 1
+
 using namespace std;
 class LdapServer{
     public:

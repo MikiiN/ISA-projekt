@@ -71,15 +71,31 @@ void LdapServer::LdapBind(int sock){
     
     int msgSize = read(sock, &buffer[0], buffer.size());
     buffer.resize(msgSize);
-    LdapMessage decodedMsg;
+    ldap_msg_t decodedMsg;
     if(ber.decode(buffer, decodedMsg)){
         cout << "Error decode" << endl;
+        return;
     }
-    cout << "op Code: " << decodedMsg.OpCode << endl;
-    cout << "msg id result: " << decodedMsg.MsgId << endl;
-    cout << "version: " << decodedMsg.BindRequest.version << endl;
-    cout << "name: " << decodedMsg.BindRequest.name << endl;
-    // unsigned char bindRespo[15] = {0x30, 0x0c, 0x02, 0x01, 0x01, 0x61, 0x07, 0x0a, 0x01, 0x00, 0x04, 0x00, 0x04, 0x00};
-    // msgSize = write(sock, bindRespo, 15);
+    ldap_msg_t responseMsg;
+    responseMsg.OpCode = LDAP_BIND_RESPONSE;
+    responseMsg.MsgId = decodedMsg.MsgId;
+    responseMsg.BindResponse.resultCode = SUCCESS;
+    responseMsg.BindResponse.matchedDN = "";
+    responseMsg.BindResponse.errorMessage = "";
+    if(ber.encode(buffer, responseMsg)){
+        cout << "Error encode" << endl;
+        return;
+    }
+    msgSize = (int)buffer.size();
+    if((write(sock, &buffer[0], msgSize)) == -1){
+        cout << "Error write" << endl;
+        return;
+    }
+    // cout << "op Code: " << decodedMsg.OpCode << endl;
+    // cout << "msg id result: " << decodedMsg.MsgId << endl;
+    // cout << "version: " << decodedMsg.BindRequest.version << endl;
+    // cout << "name: " << decodedMsg.BindRequest.name << endl;
+    // // unsigned char bindRespo[15] = {0x30, 0x0c, 0x02, 0x01, 0x01, 0x61, 0x07, 0x0a, 0x01, 0x00, 0x04, 0x00, 0x04, 0x00};
+    // // msgSize = write(sock, bindRespo, 15);
     
 }

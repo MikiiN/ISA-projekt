@@ -9,6 +9,7 @@
 
 #define INTEGER 0x02
 #define STRING 0x04
+#define ENUMERATED 0x0a
 
 #define LDAP_BIND_REQUEST 0x60
 #define LDAP_BIND_RESPONSE 0x61
@@ -66,6 +67,11 @@ class BER{
         int getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage);
         int encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message);
         int addMessageLength(vector<char> &resultMessage, ldap_msg_t &message);
+        void addInt(vector<char> &resultMessage, int value);
+        void addEnumerated(vector<char> &resultMessage, int value);
+        void addString(vector<char> &resultMessage, string value);
+        void addLongFormLength(vector<char> &resultMessage, int length);
+        void addLongFormInt(vector<char> &resultMessage, int value, int length);
         int calculateBindResponseLength(bind_response_data_t &BindResponse);
         int calculateIntLength(int value);
         int calculateBerHeaderLength(int dataLength);
