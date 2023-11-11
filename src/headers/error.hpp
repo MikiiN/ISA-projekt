@@ -13,6 +13,8 @@
 #define SERVER_ERR_ACCEPT_FAILED 12
 #define SERVER_ERR_FORK_FAILED 13
 
+#define DATABASE_ERR_OPEN_FILE_FAILED 20
+
 void printError(int errorCode);
 
 #endif

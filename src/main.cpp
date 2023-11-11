@@ -26,7 +26,6 @@ int main(int argc, char *argv[]){
         return err;
     }
 
-    //LdapServer server(arg.getPortNumber(), arg.getFileName());
     server = new LdapServer(arg->getPortNumber(), arg->getFileName());
     signal(SIGINT, sigHandler);
     try{
@@ -38,6 +37,7 @@ int main(int argc, char *argv[]){
         delete arg;
         return err;
     }
+
     delete server;
     delete arg;
     return 0;

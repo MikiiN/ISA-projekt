@@ -3,6 +3,11 @@
 LdapServer::LdapServer(int portNumber, string fileName){
     port = portNumber;
     file = fileName;
+    db = new Database(fileName);
+}
+
+LdapServer::~LdapServer(){
+    delete db;
 }
 
 int LdapServer::getParentFD(){

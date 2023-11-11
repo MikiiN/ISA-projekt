@@ -13,6 +13,7 @@
 #include <signal.h>
 #include "error.hpp"
 #include "ber.hpp"
+#include "database.hpp"
 
 #define QUEUE 1
 #define BUFFER_SIZE 256
@@ -28,6 +29,7 @@ using namespace std;
 class LdapServer{
     public:
         LdapServer(int portNumber, string fileName);
+        ~LdapServer();
         void start();
         int getParentFD();
         int getChildFD();
@@ -35,6 +37,7 @@ class LdapServer{
         int port;
         string file;
         BER ber;
+        Database *db;
         int fileDescriptor;
         int sock;
         void LdapBind();
