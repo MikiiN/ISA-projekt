@@ -5,11 +5,16 @@ LdapServer::LdapServer(int portNumber, string fileName){
     file = fileName;
 }
 
+int LdapServer::getParentFD(){
+    return fileDescriptor;
+}
+int LdapServer::getChildFD(){
+    return sock;
+}
+
 void LdapServer::start(){
     struct sockaddr_in6 server;
     struct sockaddr_in6 client;
-    int fileDescriptor;
-    int newSock;
     pid_t pid;
     
     if((fileDescriptor = socket(PF_INET6, SOCK_STREAM, 0)) < 0){
@@ -31,71 +36,53 @@ void LdapServer::start(){
 
     int len = sizeof(client);
     while(true){
-        if((newSock = accept(fileDescriptor, (struct sockaddr *)&client, (socklen_t *)&len)) == -1){
+        if((sock = accept(fileDescriptor, (struct sockaddr *)&client, (socklen_t *)&len)) == -1){
             throw SERVER_ERR_ACCEPT_FAILED;
         }
 
         pid = fork();
         if(pid > 0){ // parent process
-            close(newSock);
+            close(sock);
         }
         else if(pid == 0){ // child process
             close(fileDescriptor);
-            LdapBind(newSock);
-            // unsigned char buffer[256];
-            // int msgSize = read(newSock, buffer, 256);
-            // std::cout << "msg size: " << msgSize << std::endl;
-            // for(int i = 0; i < msgSize; i++){
-            //     std::cout << std::hex << (unsigned int) buffer[i] << " ";
-            // }
-            close(newSock);
+            LdapBind();
+            close(sock);
             return;
         }
         else{ // fork error
             throw SERVER_ERR_FORK_FAILED;
         }
-
-        /*
-        if(inet_ntop(AF_INET6, &client.sin6_addr, str, sizeof(str))) {
-            printf("INFO: New connection:\n");
-            printf("INFO: Client address is %s\n", str);
-            printf("INFO: Client port is %d\n", ntohs(client.sin6_port));
-		}
-        */
     }
     close(fileDescriptor);
 }
 
-void LdapServer::LdapBind(int sock){
+void LdapServer::LdapBind(){
     vector<char> buffer(BUFFER_SIZE);
     
     int msgSize = read(sock, &buffer[0], buffer.size());
     buffer.resize(msgSize);
     ldap_msg_t decodedMsg;
+    ldap_msg_t responseMsg;
     if(ber.decode(buffer, decodedMsg)){
         cout << "Error decode" << endl;
-        return;
+        responseMsg.BindResponse.resultCode = FAILED;
+        responseMsg.BindResponse.errorMessage = "ERROR";
     }
-    ldap_msg_t responseMsg;
+    else{
+        responseMsg.BindResponse.resultCode = SUCCESS;
+        responseMsg.BindResponse.errorMessage = "";
+    }
     responseMsg.OpCode = LDAP_BIND_RESPONSE;
     responseMsg.MsgId = decodedMsg.MsgId;
-    responseMsg.BindResponse.resultCode = SUCCESS;
     responseMsg.BindResponse.matchedDN = "";
-    responseMsg.BindResponse.errorMessage = "";
     if(ber.encode(buffer, responseMsg)){
         cout << "Error encode" << endl;
         return;
     }
     msgSize = (int)buffer.size();
-    if((write(sock, &buffer[0], msgSize)) == -1){
+    if((write(sock, &buffer[0], msgSize)) == WRITE_FAILED){
         cout << "Error write" << endl;
         return;
-    }
-    // cout << "op Code: " << decodedMsg.OpCode << endl;
-    // cout << "msg id result: " << decodedMsg.MsgId << endl;
-    // cout << "version: " << decodedMsg.BindRequest.version << endl;
-    // cout << "name: " << decodedMsg.BindRequest.name << endl;
-    // // unsigned char bindRespo[15] = {0x30, 0x0c, 0x02, 0x01, 0x01, 0x61, 0x07, 0x0a, 0x01, 0x00, 0x04, 0x00, 0x04, 0x00};
-    // // msgSize = write(sock, bindRespo, 15);
-    
+    }  
 }
