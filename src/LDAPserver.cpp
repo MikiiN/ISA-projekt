@@ -52,6 +52,7 @@ void LdapServer::start(){
         else if(pid == 0){ // child process
             close(fileDescriptor);
             LdapBind();
+            LdapSearch();
             close(sock);
             return;
         }
@@ -90,4 +91,18 @@ void LdapServer::LdapBind(){
         cout << "Error write" << endl;
         return;
     }  
+}
+
+void LdapServer::LdapSearch(){
+    vector<char> buffer(BUFFER_SIZE);
+    
+    int msgSize = read(sock, &buffer[0], buffer.size());
+    buffer.resize(msgSize);
+    ldap_msg_t decodedMsg;
+    ldap_msg_t responseMsg;
+    if(ber.decode(buffer, decodedMsg)){
+        cout << "Error decode" << endl;
+        responseMsg.BindResponse.resultCode = FAILED;
+        responseMsg.BindResponse.errorMessage = "ERROR";
+    }
 }

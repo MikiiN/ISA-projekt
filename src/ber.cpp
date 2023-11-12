@@ -80,14 +80,46 @@ string BER::getStr(vector<char> &message){
     return result;
 }
 
+int BER::getEnumerated(vector<char> &message){
+    if(message[position] != ENUMERATED){
+        return ERR;
+    }
+    int whereLengthEnd;
+    unsigned int length = getBerLength(message, whereLengthEnd);
+    int result = 0;
+    int index;
+    for(unsigned int i = 0; i < length; i++){
+        index = whereLengthEnd + (length - i);
+        result += (int) (message[position + index] << (sizeof(char) * BYTE * i));
+    }
+    int enumLen = length + LENGTH_OFFSET;
+    // skip enum in message
+    position += enumLen;
+    return result;
+}
+
+bool BER::getBool(vector<char> &message){
+    if(message[position] != BOOLEAN){
+        throw;
+    }
+    position += LENGTH_OFFSET;
+    bool result = message[position];
+    position++;
+    return result;
+}
+
 int BER::getProtocolData(vector<char> &message, ldap_msg_t &resultMessage){
     switch(message[position]){
         case LDAP_BIND_REQUEST:
             resultMessage.OpCode = LDAP_BIND_REQUEST;
-            if(getBindRequestData(message, resultMessage) == ERR)
+            if(getBindRequestData(message, resultMessage) == ERR){
                 return ERR;
+            }
             break;
         case LDAP_SEARCH_REQUEST:
+            if(getSearchRequestData(message, resultMessage) == ERR){
+                return ERR;
+            }
             break;
         default:
             return ERR;
@@ -102,6 +134,42 @@ int BER::getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     position += whereLengthEnd+1;
     resultMessage.BindRequest.version = getInt(message);
     resultMessage.BindRequest.name = getStr(message);
+    return OK;
+}
+
+int BER::getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage){
+    int whereLengthEnd;
+    getBerLength(message, whereLengthEnd);
+    position += whereLengthEnd+1;
+    if(getSearchRequestBaseObject(message, resultMessage)){
+        return ERR;
+    }
+    resultMessage.SearchRequest.scope = getEnumerated(message);
+    resultMessage.SearchRequest.derefAliases = getEnumerated(message);
+    resultMessage.SearchRequest.sizeLimit = getInt(message);
+    resultMessage.SearchRequest.timeLimit = getInt(message);
+    resultMessage.SearchRequest.typesOnly = getBool(message);
+    if(getSearchRequestFilters(message, resultMessage)){
+        return ERR;
+    }
+    return OK;
+}
+
+int BER::getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage){
+    string baseObjects = getStr(message);
+    istringstream stringStream(move(baseObjects));
+    string baseObj;
+    while(getline(stringStream, baseObj, DOMAIN_COMPONENT_SEPARATOR)){
+        if(baseObj.rfind(DOMAIN_COMPONENT_PREFIX, STRING_BEGINNING)){
+            return ERR;
+        }
+        resultMessage.SearchRequest.baseObject.push_back(move(baseObj));
+    }
+    return OK;    
+}
+
+int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage){
+    
     return OK;
 }
 

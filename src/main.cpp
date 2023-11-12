@@ -1,6 +1,7 @@
 #include "headers/argumentParser.hpp"
 #include "headers/error.hpp"
 #include "headers/LDAPserver.hpp"
+#include <signal.h>
 
 using namespace std;
 

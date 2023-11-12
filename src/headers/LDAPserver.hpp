@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <iostream>
 #include <vector>
-#include <signal.h>
 #include "error.hpp"
 #include "ber.hpp"
 #include "database.hpp"
@@ -41,6 +40,7 @@ class LdapServer{
         int fileDescriptor;
         int sock;
         void LdapBind();
+        void LdapSearch();
 };
 
 #endif
