@@ -19,6 +19,10 @@
 #define FILTER_EQUALITY_MATCH 0xa3
 #define FILTER_SUBSTRING 0xa4
 
+#define SUBSTRING_STARTS_WITH 0x82
+#define SUBSTRING_CONTAINS 0x81
+#define SUBSTRING_ENDS_WITH 0x80
+
 #define LDAP_BIND_REQUEST 0x60
 #define LDAP_BIND_RESPONSE 0x61
 #define LDAP_SEARCH_REQUEST 0x63
@@ -93,6 +97,7 @@ class BER{
         int getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage);
         int getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage);
         int getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage);
+        int getSearchFilterSubstring(vector<char> &message, string &filter);
         int encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message);
         int addMessageLength(vector<char> &resultMessage, ldap_msg_t &message);
         void addInt(vector<char> &resultMessage, int value);

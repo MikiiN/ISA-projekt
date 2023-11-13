@@ -31,6 +31,10 @@ void LdapServer::start(){
     server.sin6_addr = in6addr_any;
     server.sin6_port = htons(port);
 
+    int reuse = 1;
+    if (setsockopt(fileDescriptor, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
+        throw SERVER_ERR_SETSOCKOPT;
+
     if(bind(fileDescriptor, (struct sockaddr *)&server, sizeof(server)) < 0){
         throw SERVER_ERR_BIND_FAILED;
     }

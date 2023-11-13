@@ -76,7 +76,7 @@ string BER::getStr(vector<char> &message){
     }
     int skip = position+whereLengthEnd+1;
     string result(message.begin()+skip, message.begin()+skip+length);
-    position += whereLengthEnd+1;
+    position += whereLengthEnd+length+1;
     return result;
 }
 
@@ -100,7 +100,7 @@ int BER::getEnumerated(vector<char> &message){
 
 bool BER::getBool(vector<char> &message){
     if(message[position] != BOOLEAN){
-        throw;
+        throw ERR;
     }
     position += LENGTH_OFFSET;
     bool result = message[position];
@@ -169,7 +169,55 @@ int BER::getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMes
 }
 
 int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage){
-    
+    switch((unsigned char)message[position]){
+        case FILTER_AND:
+            break;
+        case FILTER_OR:
+            break;
+        case FILTER_NOT:
+            break;
+        case FILTER_SUBSTRING:
+            if(getSearchFilterSubstring(message, resultMessage.SearchRequest.filter)){
+                return ERR;
+            }
+            break;
+        case FILTER_EQUALITY_MATCH:
+            break;
+        default:
+            return ERR;
+    }
+    return OK;
+}
+
+int BER::getSearchFilterSubstring(vector<char> &message, string &filter){
+    filter += '(';
+    position += SHORT_FORM_HEADER_SIZE;
+    string attribute = getStr(message);
+    filter.append(move(attribute));
+    filter += '=';
+    if(message[position] != SEQUENCE){
+        return ERR;
+    }
+    position += SHORT_FORM_HEADER_SIZE;
+    int whereLengthEnd;
+    int substringLength = getBerLength(message, whereLengthEnd);
+    int substringStartPosition = position+whereLengthEnd+1;
+    string s(message.begin()+substringStartPosition, message.begin()+substringStartPosition+substringLength);
+    switch((unsigned char)message[position]){
+        case SUBSTRING_STARTS_WITH:
+            filter += '*' + s;
+            break;
+        case SUBSTRING_CONTAINS:
+            filter += '*' + s + '*';
+            break;
+        case SUBSTRING_ENDS_WITH:
+            filter += s + '*';
+            break;
+        default:
+            return ERR;
+    }
+    filter += ')';
+    cout << filter << endl;
     return OK;
 }
 
