@@ -12,10 +12,10 @@ int BER::decode(vector<char> message, ldap_msg_t &resultMessage){
         return ERR;
     }
     int whereLengthEnd;
-    if(getBerLength(message, whereLengthEnd) != (message.size() - LENGTH_OFFSET)){
+    if(getBerLength(message, whereLengthEnd) != (message.size() - whereLengthEnd)){
         return ERR;
     }
-    position += whereLengthEnd+1; 
+    position += whereLengthEnd; 
     resultMessage.MsgId = getInt(message);
     if(resultMessage.MsgId == ERR){
         return ERR;
@@ -31,7 +31,7 @@ unsigned int BER::getBerLength(vector<char> &message, int &whereLengthEnd){
         // long form
         unsigned int lengthOfLength = (unsigned int)(message[position + 1] & LONG_FORM_MASK);
         unsigned int length = 0;
-        whereLengthEnd = lengthOfLength+1;
+        whereLengthEnd = lengthOfLength + SHORT_FORM_HEADER_SIZE;
         unsigned int msgIndex;
         for(unsigned int i = 0; i < lengthOfLength; i++){
             msgIndex = (lengthOfLength - 1) - i + LENGTH_OFFSET;
@@ -41,9 +41,15 @@ unsigned int BER::getBerLength(vector<char> &message, int &whereLengthEnd){
     }
     else{
         /// short form
-        whereLengthEnd = SHORT_FORM_INDEX_END;
+        whereLengthEnd = SHORT_FORM_HEADER_SIZE;
         return (unsigned int) message[position+1];
     }
+}
+
+void BER::skipBerTagLength(vector<char> &message){
+    int whereLengthEnd;
+    getBerLength(message, whereLengthEnd);
+    position += whereLengthEnd;
 }
 
 int BER::getInt(vector<char> &message){
@@ -54,11 +60,11 @@ int BER::getInt(vector<char> &message){
     unsigned int length = getBerLength(message, whereLengthEnd);
     int result = 0;
     int index;
-    for(unsigned int i = 0; i < length; i++){
+    for(unsigned int i = 1; i <= length; i++){
         index = whereLengthEnd + (length - i);
-        result += (int) (message[position + index] << (sizeof(char) * BYTE * i));
+        result += (int) (message[position + index] << (sizeof(char) * BYTE * (i-1)));
     }
-    int intLen = length + LENGTH_OFFSET;
+    int intLen = length + whereLengthEnd;
     // skip int in message
     position += intLen;
     return result;
@@ -74,9 +80,9 @@ string BER::getStr(vector<char> &message){
         position += LENGTH_OFFSET;
         return "";
     }
-    int skip = position+whereLengthEnd+1;
+    int skip = position+whereLengthEnd;
     string result(message.begin()+skip, message.begin()+skip+length);
-    position += whereLengthEnd+length+1;
+    position += whereLengthEnd+length;
     return result;
 }
 
@@ -88,11 +94,11 @@ int BER::getEnumerated(vector<char> &message){
     unsigned int length = getBerLength(message, whereLengthEnd);
     int result = 0;
     int index;
-    for(unsigned int i = 0; i < length; i++){
+    for(unsigned int i = 1; i <= length; i++){
         index = whereLengthEnd + (length - i);
-        result += (int) (message[position + index] << (sizeof(char) * BYTE * i));
+        result += (int) (message[position + index] << (sizeof(char) * BYTE * (i-1)));
     }
-    int enumLen = length + LENGTH_OFFSET;
+    int enumLen = length + whereLengthEnd;
     // skip enum in message
     position += enumLen;
     return result;
@@ -131,7 +137,7 @@ int BER::getProtocolData(vector<char> &message, ldap_msg_t &resultMessage){
 int BER::getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     int whereLengthEnd;
     getBerLength(message, whereLengthEnd);
-    position += whereLengthEnd+1;
+    position += whereLengthEnd;
     resultMessage.BindRequest.version = getInt(message);
     resultMessage.BindRequest.name = getStr(message);
     return OK;
@@ -140,7 +146,7 @@ int BER::getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage){
 int BER::getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     int whereLengthEnd;
     getBerLength(message, whereLengthEnd);
-    position += whereLengthEnd+1;
+    position += whereLengthEnd;
     if(getSearchRequestBaseObject(message, resultMessage)){
         return ERR;
     }
@@ -177,11 +183,10 @@ int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessag
         case FILTER_NOT:
             break;
         case FILTER_SUBSTRING:
-            if(getSearchFilterSubstring(message, resultMessage.SearchRequest.filter)){
-                return ERR;
-            }
+            resultMessage.SearchRequest.filter = getSearchFilterSubstring(message);
             break;
         case FILTER_EQUALITY_MATCH:
+            resultMessage.SearchRequest.filter = getSearchFilterStringMatch(message);
             break;
         default:
             return ERR;
@@ -189,36 +194,62 @@ int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessag
     return OK;
 }
 
-int BER::getSearchFilterSubstring(vector<char> &message, string &filter){
-    filter += '(';
-    position += SHORT_FORM_HEADER_SIZE;
-    string attribute = getStr(message);
-    filter.append(move(attribute));
-    filter += '=';
-    if(message[position] != SEQUENCE){
-        return ERR;
-    }
-    position += SHORT_FORM_HEADER_SIZE;
+filter_t BER::getSearchFilterSubstring(vector<char> &message){
     int whereLengthEnd;
-    int substringLength = getBerLength(message, whereLengthEnd);
-    int substringStartPosition = position+whereLengthEnd+1;
-    string s(message.begin()+substringStartPosition, message.begin()+substringStartPosition+substringLength);
-    switch((unsigned char)message[position]){
-        case SUBSTRING_STARTS_WITH:
-            filter += '*' + s;
-            break;
-        case SUBSTRING_CONTAINS:
-            filter += '*' + s + '*';
-            break;
-        case SUBSTRING_ENDS_WITH:
-            filter += s + '*';
-            break;
-        default:
-            return ERR;
+    filter_t filter;
+    filter.type = fltr_substr;
+    skipBerTagLength(message);
+    string column = getStr(message);
+    if(message[position] != SEQUENCE){
+        throw ERR;
     }
-    filter += ')';
-    cout << filter << endl;
-    return OK;
+    int seqLen = getBerLength(message, whereLengthEnd);
+    skipBerTagLength(message);
+    int seqEnd = position + seqLen;
+    while(position < seqEnd){
+        filter_string_data_t data;
+        int substringLength = getBerLength(message, whereLengthEnd);
+        int substringStartPosition = position+whereLengthEnd;
+        string value(message.begin()+substringStartPosition, message.begin()+substringStartPosition+substringLength);
+        switch((unsigned char)message[position]){
+            case SUBSTRING_STARTS_WITH:
+                data.type = substr_start;
+                break;
+            case SUBSTRING_CONTAINS:
+                data.type = substr_contains;
+                break;
+            case SUBSTRING_ENDS_WITH:
+                data.type = substr_end;
+                break;
+            default:
+                throw ERR;
+        }
+        data.column = column;
+        data.value = move(value);
+        filter.data.push_back(move(data));
+        position += whereLengthEnd + substringLength;
+    }
+    return filter;
+}
+
+filter_t BER::getSearchFilterStringMatch(vector<char> &message){
+    filter_t filter;
+    filter_string_data_t data;
+    filter.type = fltr_str_eq;
+    data.type = str_eq;
+    skipBerTagLength(message);
+    string column = getStr(message);
+    string value = getStr(message);
+    data.column = move(column);
+    data.value = move(value);
+    filter.data.push_back(move(data));
+    return filter;
+}
+
+filter_t BER::getSearchFilterNot(vector<char> &message){
+    filter_t filter;
+    filter.type = fltr_not;
+
 }
 
 int BER::encode(vector<char> &resultMessage, ldap_msg_t &message){

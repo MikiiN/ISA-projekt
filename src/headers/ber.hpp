@@ -50,11 +50,38 @@
 
 using namespace std;
 
+enum filter_type{
+    fltr_and = FILTER_AND,
+    fltr_or = FILTER_OR,
+    fltr_not = FILTER_NOT,
+    fltr_str_eq = FILTER_EQUALITY_MATCH,
+    fltr_substr = FILTER_SUBSTRING
+};
+
+enum filter_string_type{
+    str_eq = FILTER_EQUALITY_MATCH,
+    substr_start = SUBSTRING_STARTS_WITH,
+    substr_contains = SUBSTRING_CONTAINS,
+    substr_end = SUBSTRING_ENDS_WITH
+};
+
 typedef struct{
     int version;
     string name;
     int auth;
 }bind_request_data_t;
+
+typedef struct{
+    filter_string_type type;
+    string column;
+    string value;
+}filter_string_data_t;
+
+typedef struct fltr{
+    filter_type type;
+    vector<struct fltr> childs;
+    vector<filter_string_data_t> data;
+}filter_t;
 
 typedef struct{
     vector<string> baseObject;
@@ -63,7 +90,7 @@ typedef struct{
     int sizeLimit;
     int timeLimit;
     bool typesOnly;
-    string filter;
+    filter_t filter;
     vector<string> atributes;
 }search_request_data_t;
 
@@ -88,6 +115,7 @@ class BER{
     private:
         int position;
         unsigned int getBerLength(vector<char> &message, int &whereLengthEnd);
+        void skipBerTagLength(vector<char> &message);
         int getProtocolData(vector<char> &message, ldap_msg_t &resultMessage);
         int getInt(vector<char> &message);
         string getStr(vector<char> &message);
@@ -97,7 +125,9 @@ class BER{
         int getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage);
         int getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage);
         int getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage);
-        int getSearchFilterSubstring(vector<char> &message, string &filter);
+        filter_t getSearchFilterSubstring(vector<char> &message);
+        filter_t getSearchFilterStringMatch(vector<char> &message);
+        filter_t getSearchFilterNot(vector<char> &message);
         int encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message);
         int addMessageLength(vector<char> &resultMessage, ldap_msg_t &message);
         void addInt(vector<char> &resultMessage, int value);

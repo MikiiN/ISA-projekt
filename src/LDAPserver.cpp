@@ -99,7 +99,6 @@ void LdapServer::LdapBind(){
 
 void LdapServer::LdapSearch(){
     vector<char> buffer(BUFFER_SIZE);
-    
     int msgSize = read(sock, &buffer[0], buffer.size());
     buffer.resize(msgSize);
     ldap_msg_t decodedMsg;

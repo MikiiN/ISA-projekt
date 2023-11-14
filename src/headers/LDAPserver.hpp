@@ -15,7 +15,7 @@
 #include "database.hpp"
 
 #define QUEUE 1
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 512
 
 #define SUCCESS 0
 #define FAILED 1
