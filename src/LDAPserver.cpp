@@ -105,7 +105,5 @@ void LdapServer::LdapSearch(){
     ldap_msg_t responseMsg;
     if(ber.decode(buffer, decodedMsg)){
         cout << "Error decode" << endl;
-        responseMsg.BindResponse.resultCode = FAILED;
-        responseMsg.BindResponse.errorMessage = "ERROR";
     }
 }

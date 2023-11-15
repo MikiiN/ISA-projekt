@@ -125,9 +125,10 @@ class BER{
         int getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage);
         int getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage);
         int getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage);
+        filter_t getSearchRequestFiltersSwitch(vector<char> &message);
         filter_t getSearchFilterSubstring(vector<char> &message);
         filter_t getSearchFilterStringMatch(vector<char> &message);
-        filter_t getSearchFilterNot(vector<char> &message);
+        filter_t getSearchFilterAndOrNot(vector<char> &message, filter_type type);
         int encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message);
         int addMessageLength(vector<char> &resultMessage, ldap_msg_t &message);
         void addInt(vector<char> &resultMessage, int value);

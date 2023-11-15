@@ -175,23 +175,35 @@ int BER::getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMes
 }
 
 int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage){
-    switch((unsigned char)message[position]){
-        case FILTER_AND:
-            break;
-        case FILTER_OR:
-            break;
-        case FILTER_NOT:
-            break;
-        case FILTER_SUBSTRING:
-            resultMessage.SearchRequest.filter = getSearchFilterSubstring(message);
-            break;
-        case FILTER_EQUALITY_MATCH:
-            resultMessage.SearchRequest.filter = getSearchFilterStringMatch(message);
-            break;
-        default:
-            return ERR;
+    try{
+        resultMessage.SearchRequest.filter = getSearchRequestFiltersSwitch(message);
+    }
+    catch(int err){
+        return ERR;
     }
     return OK;
+}
+
+filter_t BER::getSearchRequestFiltersSwitch(vector<char> &message){
+    filter_t filter;
+    unsigned char type = (unsigned char)message[position];
+    switch(type){
+        case FILTER_AND:
+        case FILTER_OR:
+        case FILTER_NOT:
+            filter = getSearchFilterAndOrNot(message, (filter_type)type);
+            break;
+        case FILTER_SUBSTRING:
+            filter = getSearchFilterSubstring(message);
+            break;
+        case FILTER_EQUALITY_MATCH:
+            filter = getSearchFilterStringMatch(message);
+            break;
+        default:
+            cout << "test" << endl;
+            throw ERR;
+    }
+    return filter;
 }
 
 filter_t BER::getSearchFilterSubstring(vector<char> &message){
@@ -246,10 +258,25 @@ filter_t BER::getSearchFilterStringMatch(vector<char> &message){
     return filter;
 }
 
-filter_t BER::getSearchFilterNot(vector<char> &message){
+filter_t BER::getSearchFilterAndOrNot(vector<char> &message, filter_type type){
     filter_t filter;
-    filter.type = fltr_not;
-
+    filter.type = type;
+    int whereLengthEnd;
+    int length = getBerLength(message, whereLengthEnd);
+    skipBerTagLength(message);
+    int End = position + length;
+    if((type == fltr_or) || (type == fltr_and)){
+        while(position < End){
+            filter.childs.push_back(getSearchRequestFiltersSwitch(message));
+        }
+    }
+    else{
+        filter.childs.push_back(getSearchRequestFiltersSwitch(message));
+        if(position < End){
+            throw ERR;
+        }
+    }
+    return filter;
 }
 
 int BER::encode(vector<char> &resultMessage, ldap_msg_t &message){
