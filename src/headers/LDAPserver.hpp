@@ -39,8 +39,9 @@ class LdapServer{
         Database *db;
         int fileDescriptor;
         int sock;
-        void LdapBind();
-        void LdapSearch();
+        void ldapBind();
+        void ldapSearch();
+        void sendMessage(vector<char> msg);
 };
 
 #endif

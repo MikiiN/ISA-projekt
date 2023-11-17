@@ -118,12 +118,19 @@ int BER::getProtocolData(vector<char> &message, ldap_msg_t &resultMessage){
     switch(message[position]){
         case LDAP_BIND_REQUEST:
             resultMessage.OpCode = LDAP_BIND_REQUEST;
-            if(getBindRequestData(message, resultMessage) == ERR){
+            if(decodeBindRequestData(message, resultMessage) == ERR){
                 return ERR;
             }
             break;
         case LDAP_SEARCH_REQUEST:
-            if(getSearchRequestData(message, resultMessage) == ERR){
+            resultMessage.OpCode = LDAP_SEARCH_REQUEST;
+            if(decodeSearchRequestData(message, resultMessage) == ERR){
+                return ERR;
+            }
+            break;
+        case LDAP_UNBIND_REQUEST:
+            resultMessage.OpCode = LDAP_UNBIND_REQUEST;
+            if(decodeUnbindRequestData(message) == ERR){
                 return ERR;
             }
             break;
@@ -134,7 +141,7 @@ int BER::getProtocolData(vector<char> &message, ldap_msg_t &resultMessage){
     return OK;
 }
 
-int BER::getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage){
+int BER::decodeBindRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     int whereLengthEnd;
     getBerLength(message, whereLengthEnd);
     position += whereLengthEnd;
@@ -143,11 +150,11 @@ int BER::getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     return OK;
 }
 
-int BER::getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage){
+int BER::decodeSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     int whereLengthEnd;
     getBerLength(message, whereLengthEnd);
     position += whereLengthEnd;
-    if(getSearchRequestBaseObject(message, resultMessage)){
+    if(decodeSearchRequestBaseObject(message, resultMessage)){
         return ERR;
     }
     resultMessage.SearchRequest.scope = getEnumerated(message);
@@ -155,13 +162,22 @@ int BER::getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage){
     resultMessage.SearchRequest.sizeLimit = getInt(message);
     resultMessage.SearchRequest.timeLimit = getInt(message);
     resultMessage.SearchRequest.typesOnly = getBool(message);
-    if(getSearchRequestFilters(message, resultMessage)){
+    if(decodeSearchRequestFilters(message, resultMessage)){
         return ERR;
     }
     return OK;
 }
 
-int BER::getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage){
+int BER::decodeUnbindRequestData(vector<char> &message){
+    int whereLengthEnd;
+    int length = getBerLength(message, whereLengthEnd);
+    if(length > 0){
+        return ERR;
+    }
+    return OK;
+}
+
+int BER::decodeSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage){
     string baseObjects = getStr(message);
     istringstream stringStream(move(baseObjects));
     string baseObj;
@@ -174,9 +190,9 @@ int BER::getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMes
     return OK;    
 }
 
-int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage){
+int BER::decodeSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage){
     try{
-        resultMessage.SearchRequest.filter = getSearchRequestFiltersSwitch(message);
+        resultMessage.SearchRequest.filter = decodeSearchRequestFiltersSwitch(message);
     }
     catch(int err){
         return ERR;
@@ -184,32 +200,31 @@ int BER::getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessag
     return OK;
 }
 
-filter_t BER::getSearchRequestFiltersSwitch(vector<char> &message){
+filter_t BER::decodeSearchRequestFiltersSwitch(vector<char> &message){
     filter_t filter;
     unsigned char type = (unsigned char)message[position];
     switch(type){
         case FILTER_AND:
         case FILTER_OR:
         case FILTER_NOT:
-            filter = getSearchFilterAndOrNot(message, (filter_type)type);
+            filter = decodeSearchFilterAndOrNot(message, (filter_type)type);
             break;
         case FILTER_SUBSTRING:
-            filter = getSearchFilterSubstring(message);
+            filter = decodeSearchFilterSubstring(message);
             break;
         case FILTER_EQUALITY_MATCH:
-            filter = getSearchFilterStringMatch(message);
+            filter = decodeSearchFilterStringMatch(message);
             break;
         default:
-            cout << "test" << endl;
             throw ERR;
     }
     return filter;
 }
 
-filter_t BER::getSearchFilterSubstring(vector<char> &message){
+filter_t BER::decodeSearchFilterSubstring(vector<char> &message){
     int whereLengthEnd;
     filter_t filter;
-    filter.type = fltr_substr;
+    filter.type = Fltr_substr;
     skipBerTagLength(message);
     string column = getStr(message);
     if(message[position] != SEQUENCE){
@@ -225,13 +240,13 @@ filter_t BER::getSearchFilterSubstring(vector<char> &message){
         string value(message.begin()+substringStartPosition, message.begin()+substringStartPosition+substringLength);
         switch((unsigned char)message[position]){
             case SUBSTRING_STARTS_WITH:
-                data.type = substr_start;
+                data.type = Substr_start;
                 break;
             case SUBSTRING_CONTAINS:
-                data.type = substr_contains;
+                data.type = Substr_contains;
                 break;
             case SUBSTRING_ENDS_WITH:
-                data.type = substr_end;
+                data.type = Substr_end;
                 break;
             default:
                 throw ERR;
@@ -244,11 +259,11 @@ filter_t BER::getSearchFilterSubstring(vector<char> &message){
     return filter;
 }
 
-filter_t BER::getSearchFilterStringMatch(vector<char> &message){
+filter_t BER::decodeSearchFilterStringMatch(vector<char> &message){
     filter_t filter;
     filter_string_data_t data;
-    filter.type = fltr_str_eq;
-    data.type = str_eq;
+    filter.type = Fltr_str_eq;
+    data.type = Str_eq;
     skipBerTagLength(message);
     string column = getStr(message);
     string value = getStr(message);
@@ -258,20 +273,20 @@ filter_t BER::getSearchFilterStringMatch(vector<char> &message){
     return filter;
 }
 
-filter_t BER::getSearchFilterAndOrNot(vector<char> &message, filter_type type){
+filter_t BER::decodeSearchFilterAndOrNot(vector<char> &message, filter_type type){
     filter_t filter;
     filter.type = type;
     int whereLengthEnd;
     int length = getBerLength(message, whereLengthEnd);
     skipBerTagLength(message);
     int End = position + length;
-    if((type == fltr_or) || (type == fltr_and)){
+    if((type == Fltr_or) || (type == Fltr_and)){
         while(position < End){
-            filter.childs.push_back(getSearchRequestFiltersSwitch(message));
+            filter.childs.push_back(decodeSearchRequestFiltersSwitch(message));
         }
     }
     else{
-        filter.childs.push_back(getSearchRequestFiltersSwitch(message));
+        filter.childs.push_back(decodeSearchRequestFiltersSwitch(message));
         if(position < End){
             throw ERR;
         }
@@ -282,32 +297,49 @@ filter_t BER::getSearchFilterAndOrNot(vector<char> &message, filter_type type){
 int BER::encode(vector<char> &resultMessage, ldap_msg_t &message){
     position = 0;
     resultMessage.clear();
+    resultMessage.push_back(SEQUENCE);
+    if(addMessageLength(resultMessage, message)){
+        return ERR;
+    }
+    encodeInt(resultMessage, message.MsgId);
     switch(message.OpCode){
         case LDAP_BIND_RESPONSE:
             return encodeBindResponse(resultMessage, message);        
-            break;
+        case LDAP_SEARCH_RESULT_ENTRY:
+            return encodeSearchResEntry(resultMessage, message);
+        case LDAP_SEARCH_RESULT_DONE:
+            return encodeSearchResDone(resultMessage, message);
         default:
             return ERR;
     }
 }
 
 int BER::encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message){
-    resultMessage.push_back(SEQUENCE);
-    if(addMessageLength(resultMessage, message)){
-        return ERR;
-    }
-    addInt(resultMessage, message.MsgId);
     resultMessage.push_back(LDAP_BIND_RESPONSE);
-    int responseLength = calculateBindResponseLength(message.BindResponse);
-    if(responseLength > MAX_SHORT_FORM_LENGTH){
-        addLongFormLength(resultMessage, responseLength);
-    }
-    else{
-        resultMessage.push_back(responseLength);
-    }
-    addEnumerated(resultMessage, message.BindResponse.resultCode);
-    addString(resultMessage, message.BindResponse.matchedDN);
-    addString(resultMessage, message.BindResponse.errorMessage);
+    int responseLength = calculateBindResponseResDoneLength(message.BindResponse);
+    addLength(resultMessage, responseLength);
+    encodeEnumerated(resultMessage, message.BindResponse.resultCode);
+    encodeString(resultMessage, message.BindResponse.matchedDN);
+    encodeString(resultMessage, message.BindResponse.errorMessage);
+    return OK;
+}
+
+int BER::encodeSearchResEntry(vector<char> &resultMessage, ldap_msg_t &message){
+    resultMessage.push_back(LDAP_SEARCH_RESULT_ENTRY);
+    int searchResEntryLength = calculateSearchResEntryLength(message.SearchResEntry);
+    addLength(resultMessage, searchResEntryLength);
+    encodeString(resultMessage, message.SearchResEntry.objName);
+    encodeSearchResEntryAttributes(resultMessage, message.SearchResEntry.attributes);
+    return OK;
+}
+
+int BER::encodeSearchResDone(vector<char> &resultMessage, ldap_msg_t &message){
+    resultMessage.push_back(LDAP_SEARCH_RESULT_DONE);
+    int responseLength = calculateBindResponseResDoneLength(message.SearchResDone);
+    addLength(resultMessage, responseLength);
+    encodeEnumerated(resultMessage, message.SearchResDone.resultCode);
+    encodeString(resultMessage, message.SearchResDone.matchedDN);
+    encodeString(resultMessage, message.SearchResDone.errorMessage);
     return OK;
 }
 
@@ -316,39 +348,47 @@ int BER::addMessageLength(vector<char> &resultMessage, ldap_msg_t &message){
     int tmpLength;
     switch(message.OpCode){
         case LDAP_BIND_RESPONSE:
-            tmpLength = calculateBindResponseLength(message.BindResponse);
-            length += calculateBerHeaderLength(tmpLength) + tmpLength;
+            tmpLength = calculateBindResponseResDoneLength(message.BindResponse);
+            break;
+        case LDAP_SEARCH_RESULT_ENTRY:
+            tmpLength = calculateSearchResEntryLength(message.SearchResEntry);
+            break;
+        case LDAP_SEARCH_RESULT_DONE:
+            tmpLength = calculateBindResponseResDoneLength(message.SearchResDone);
             break;
         default:
             return ERR;
     }
-    if(length > MAX_SHORT_FORM_LENGTH){
-        addLongFormLength(resultMessage, length);
-    }
-    else{
-        resultMessage.push_back(length);
-    }
+    length += calculateBerHeaderLength(tmpLength) + tmpLength;
+    addLength(resultMessage, length);
     return OK;
 }
 
-void BER::addInt(vector<char> &resultMessage, int value){
+void BER::encodeSearchResEntryAttributes(vector<char> &resultMessage, vector<search_result_entry_attribute_data_t> attributes){
+    resultMessage.push_back(SEQUENCE);
+    int length = calculateResEntryAttribsLength(attributes);
+    addLength(resultMessage, length);
+    for(size_t i = 0; i < attributes.size(); i++){
+        resultMessage.push_back(SEQUENCE);
+        int aLength = calculateResEntryAttribLength(attributes[i]);
+        addLength(resultMessage, aLength);
+        encodeString(resultMessage, attributes[i].type);
+        resultMessage.push_back(SET);
+        int valLength = calculateBerHeaderLength((int) attributes[i].value.size()) + attributes[i].value.size();
+        addLength(resultMessage, valLength);
+        encodeString(resultMessage, attributes[i].value);
+    }
+}
+
+void BER::encodeInt(vector<char> &resultMessage, int value){
     resultMessage.push_back(INTEGER);
     int length = calculateIntLength(value);
     if(length > MAX_SHORT_FORM_LENGTH){
         addLongFormLength(resultMessage, length);
         addLongFormInt(resultMessage, value, length);
     }
-    else{
+    else if((length <= MAX_SHORT_FORM_LENGTH) && (length > 1)){
         resultMessage.push_back(length);
-        resultMessage.push_back(value);
-    }
-}
-
-void BER::addEnumerated(vector<char> &resultMessage, int value){
-    resultMessage.push_back(ENUMERATED);
-    int length = calculateIntLength(value);
-    if(length > MAX_SHORT_FORM_LENGTH){
-        addLongFormLength(resultMessage, length);
         addLongFormInt(resultMessage, value, length);
     }
     else{
@@ -357,17 +397,38 @@ void BER::addEnumerated(vector<char> &resultMessage, int value){
     }
 }
 
-void BER::addString(vector<char> &resultMessage, string value){
+void BER::encodeEnumerated(vector<char> &resultMessage, int value){
+    resultMessage.push_back(ENUMERATED);
+    int length = calculateIntLength(value);
+    if(length > MAX_SHORT_FORM_LENGTH){
+        addLongFormLength(resultMessage, length);
+        addLongFormInt(resultMessage, value, length);
+    }
+    else if((length <= MAX_SHORT_FORM_LENGTH) && (length > 1)){
+        resultMessage.push_back(length);
+        addLongFormInt(resultMessage, value, length);
+    }
+    else{
+        resultMessage.push_back(length);
+        resultMessage.push_back(value);
+    }
+}
+
+void BER::encodeString(vector<char> &resultMessage, string value){
     resultMessage.push_back(STRING);
     int length = (int) value.size();
+    addLength(resultMessage, length);
+    for(size_t i = 0; i < value.size(); i++){
+        resultMessage.push_back(value[i]);
+    }
+}
+
+void BER::addLength(vector<char> &resultMessage, int length){
     if(length > MAX_SHORT_FORM_LENGTH){
         addLongFormLength(resultMessage, length);
     }
     else{
         resultMessage.push_back(length);
-    }
-    for(size_t i = 0; i < value.size(); i++){
-        resultMessage.push_back(value[i]);
     }
 }
 
@@ -385,12 +446,36 @@ void BER::addLongFormInt(vector<char> &resultMessage, int value, int length){
     }
 }
 
-int BER::calculateBindResponseLength(bind_response_data_t &BindResponse){
-    int resultCodeLength = calculateIntLength(BindResponse.resultCode); 
+int BER::calculateBindResponseResDoneLength(bind_response_search_done_data_t &data){
+    int resultCodeLength = calculateIntLength(data.resultCode); 
     int length = calculateBerHeaderLength(resultCodeLength) + resultCodeLength;
-    length += calculateBerHeaderLength((int)BindResponse.matchedDN.size()) + BindResponse.matchedDN.size();
-    length += calculateBerHeaderLength((int)BindResponse.errorMessage.size()) + BindResponse.errorMessage.size();
+    length += calculateBerHeaderLength((int)data.matchedDN.size()) + data.matchedDN.size();
+    length += calculateBerHeaderLength((int)data.errorMessage.size()) + data.errorMessage.size();
     return length;
+}
+
+int BER::calculateSearchResEntryLength(search_result_entry_data_t &searchResEntry){
+    int length;
+    length = calculateBerHeaderLength((int)searchResEntry.objName.size()) + searchResEntry.objName.size();
+    int attributesLength = calculateResEntryAttribsLength(searchResEntry.attributes);
+    length += calculateBerHeaderLength(attributesLength) + attributesLength;
+    return length;
+}
+
+int BER::calculateResEntryAttribsLength(vector<search_result_entry_attribute_data_t> attributes){
+    int attributesLength = 0;
+    for(size_t i = 0; i < attributes.size(); i++){
+        int aLength = calculateResEntryAttribLength(attributes[i]);
+        attributesLength += calculateBerHeaderLength(aLength) + aLength;
+    }
+    return attributesLength;
+}
+
+int BER::calculateResEntryAttribLength(search_result_entry_attribute_data_t attribute){
+    int typeLength = calculateBerHeaderLength((int) attribute.type.size()) + attribute.type.size();
+    int valueLength = calculateBerHeaderLength((int) attribute.value.size()) + attribute.value.size();
+    int setLength = calculateBerHeaderLength(valueLength) + valueLength;
+    return typeLength + setLength;
 }
 
 int BER::calculateIntLength(int value){

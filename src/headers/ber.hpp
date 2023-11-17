@@ -5,27 +5,22 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include "filter.hpp"
 
 #define SEQUENCE 0x30
+#define SET 0x31
 
 #define BOOLEAN 0x01 
 #define INTEGER 0x02
 #define STRING 0x04
 #define ENUMERATED 0x0a
 
-#define FILTER_AND 0xa0
-#define FILTER_OR 0xa1
-#define FILTER_NOT 0xa2
-#define FILTER_EQUALITY_MATCH 0xa3
-#define FILTER_SUBSTRING 0xa4
-
-#define SUBSTRING_STARTS_WITH 0x82
-#define SUBSTRING_CONTAINS 0x81
-#define SUBSTRING_ENDS_WITH 0x80
-
 #define LDAP_BIND_REQUEST 0x60
 #define LDAP_BIND_RESPONSE 0x61
+#define LDAP_UNBIND_REQUEST 0x42
 #define LDAP_SEARCH_REQUEST 0x63
+#define LDAP_SEARCH_RESULT_ENTRY 0x64
+#define LDAP_SEARCH_RESULT_DONE 0x65
 
 #define AUTH_SIMPLE 0;
 
@@ -50,39 +45,6 @@
 
 using namespace std;
 
-enum filter_type{
-    fltr_and = FILTER_AND,
-    fltr_or = FILTER_OR,
-    fltr_not = FILTER_NOT,
-    fltr_str_eq = FILTER_EQUALITY_MATCH,
-    fltr_substr = FILTER_SUBSTRING
-};
-
-enum filter_string_type{
-    str_eq = FILTER_EQUALITY_MATCH,
-    substr_start = SUBSTRING_STARTS_WITH,
-    substr_contains = SUBSTRING_CONTAINS,
-    substr_end = SUBSTRING_ENDS_WITH
-};
-
-typedef struct{
-    int version;
-    string name;
-    int auth;
-}bind_request_data_t;
-
-typedef struct{
-    filter_string_type type;
-    string column;
-    string value;
-}filter_string_data_t;
-
-typedef struct fltr{
-    filter_type type;
-    vector<struct fltr> childs;
-    vector<filter_string_data_t> data;
-}filter_t;
-
 typedef struct{
     vector<string> baseObject;
     int scope;
@@ -95,17 +57,35 @@ typedef struct{
 }search_request_data_t;
 
 typedef struct{
+    string type;
+    string value;
+}search_result_entry_attribute_data_t;
+
+typedef struct{
+    string objName;
+    vector<search_result_entry_attribute_data_t> attributes;
+}search_result_entry_data_t;
+
+typedef struct{
+    int version;
+    string name;
+    int auth;
+}bind_request_data_t;
+
+typedef struct{
     int resultCode;
     string matchedDN;
     string errorMessage;
-}bind_response_data_t;
+}bind_response_search_done_data_t;
 
 typedef struct msg{
     int OpCode;
     int MsgId;
     bind_request_data_t BindRequest;
-    bind_response_data_t BindResponse;
+    bind_response_search_done_data_t BindResponse;
     search_request_data_t SearchRequest;
+    search_result_entry_data_t SearchResEntry;
+    bind_response_search_done_data_t SearchResDone;
 }ldap_msg_t;
 
 class BER{
@@ -121,22 +101,30 @@ class BER{
         string getStr(vector<char> &message);
         int getEnumerated(vector<char> &message);
         bool getBool(vector<char> &message);
-        int getBindRequestData(vector<char> &message, ldap_msg_t &resultMessage);
-        int getSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage);
-        int getSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage);
-        int getSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage);
-        filter_t getSearchRequestFiltersSwitch(vector<char> &message);
-        filter_t getSearchFilterSubstring(vector<char> &message);
-        filter_t getSearchFilterStringMatch(vector<char> &message);
-        filter_t getSearchFilterAndOrNot(vector<char> &message, filter_type type);
+        int decodeBindRequestData(vector<char> &message, ldap_msg_t &resultMessage);
+        int decodeSearchRequestData(vector<char> &message, ldap_msg_t &resultMessage);
+        int decodeUnbindRequestData(vector<char> &message);
+        int decodeSearchRequestBaseObject(vector<char> &message, ldap_msg_t &resultMessage);
+        int decodeSearchRequestFilters(vector<char> &message, ldap_msg_t &resultMessage);
+        filter_t decodeSearchRequestFiltersSwitch(vector<char> &message);
+        filter_t decodeSearchFilterSubstring(vector<char> &message);
+        filter_t decodeSearchFilterStringMatch(vector<char> &message);
+        filter_t decodeSearchFilterAndOrNot(vector<char> &message, filter_type type);
         int encodeBindResponse(vector<char> &resultMessage, ldap_msg_t &message);
+        int encodeSearchResEntry(vector<char> &resultMessage, ldap_msg_t &message);
+        int encodeSearchResDone(vector<char> &resultMessage, ldap_msg_t &message);
         int addMessageLength(vector<char> &resultMessage, ldap_msg_t &message);
-        void addInt(vector<char> &resultMessage, int value);
-        void addEnumerated(vector<char> &resultMessage, int value);
-        void addString(vector<char> &resultMessage, string value);
+        void encodeSearchResEntryAttributes(vector<char> &resultMessage, vector<search_result_entry_attribute_data_t> attributes);
+        void encodeInt(vector<char> &resultMessage, int value);
+        void encodeEnumerated(vector<char> &resultMessage, int value);
+        void encodeString(vector<char> &resultMessage, string value);
+        void addLength(vector<char> &resultMessage, int length);
         void addLongFormLength(vector<char> &resultMessage, int length);
         void addLongFormInt(vector<char> &resultMessage, int value, int length);
-        int calculateBindResponseLength(bind_response_data_t &BindResponse);
+        int calculateBindResponseResDoneLength(bind_response_search_done_data_t &data);
+        int calculateSearchResEntryLength(search_result_entry_data_t &searchResEntry);
+        int calculateResEntryAttribsLength(vector<search_result_entry_attribute_data_t> attributes);
+        int calculateResEntryAttribLength(search_result_entry_attribute_data_t attribute);
         int calculateIntLength(int value);
         int calculateBerHeaderLength(int dataLength);
 };

@@ -55,8 +55,8 @@ void LdapServer::start(){
         }
         else if(pid == 0){ // child process
             close(fileDescriptor);
-            LdapBind();
-            LdapSearch();
+            ldapBind();
+            ldapSearch();
             close(sock);
             return;
         }
@@ -67,7 +67,7 @@ void LdapServer::start(){
     close(fileDescriptor);
 }
 
-void LdapServer::LdapBind(){
+void LdapServer::ldapBind(){
     vector<char> buffer(BUFFER_SIZE);
     
     int msgSize = read(sock, &buffer[0], buffer.size());
@@ -90,14 +90,15 @@ void LdapServer::LdapBind(){
         cout << "Error encode" << endl;
         return;
     }
-    msgSize = (int)buffer.size();
-    if((write(sock, &buffer[0], msgSize)) == WRITE_FAILED){
-        cout << "Error write" << endl;
-        return;
-    }  
+    try{
+        sendMessage(buffer);
+    }
+    catch(int err){
+        throw;
+    } 
 }
 
-void LdapServer::LdapSearch(){
+void LdapServer::ldapSearch(){
     vector<char> buffer(BUFFER_SIZE);
     int msgSize = read(sock, &buffer[0], buffer.size());
     buffer.resize(msgSize);
@@ -105,5 +106,63 @@ void LdapServer::LdapSearch(){
     ldap_msg_t responseMsg;
     if(ber.decode(buffer, decodedMsg)){
         cout << "Error decode" << endl;
+    }
+    record_t result;
+    try{
+        result = db->search(decodedMsg.SearchRequest.filter);
+    }
+    catch(int err){
+        throw;
+    }
+
+    responseMsg.OpCode = LDAP_SEARCH_RESULT_ENTRY;
+    responseMsg.MsgId = decodedMsg.MsgId;
+    responseMsg.SearchResEntry.objName = "uid=" + result.uid;
+    search_result_entry_attribute_data_t data;
+    data.type = "cn";
+    data.value = result.commonName;
+    responseMsg.SearchResEntry.attributes.push_back(move(data));
+    data.type = "mail";
+    data.value = result.email;
+    responseMsg.SearchResEntry.attributes.push_back(move(data));
+    
+    if(ber.encode(buffer, responseMsg)){
+        cout << "Error encode resp" << endl;
+    }
+    try{
+        sendMessage(buffer);
+    }
+    catch(int err){
+        throw;
+    }
+    ldap_msg_t resDoneMsg;
+    resDoneMsg.OpCode = LDAP_SEARCH_RESULT_DONE;
+    resDoneMsg.MsgId = decodedMsg.MsgId;
+    resDoneMsg.SearchResDone.resultCode = SUCCESS;
+    resDoneMsg.SearchResDone.matchedDN = "";
+    resDoneMsg.SearchResDone.errorMessage = "";
+    if(ber.encode(buffer, resDoneMsg)){
+        cout << "Error encode resDone" << endl;
+    }
+    try{
+        sendMessage(buffer);
+    }
+    catch(int err){
+        throw;
+    }
+    msgSize = read(sock, &buffer[0], buffer.size());
+    buffer.resize(msgSize);
+    if(ber.decode(buffer, decodedMsg)){
+        cout << "Error decode" << endl;
+    }
+    if(decodedMsg.OpCode == LDAP_UNBIND_REQUEST){
+        cout << "UNBIND" << endl;
+    }
+}
+
+void LdapServer::sendMessage(vector<char> msg){
+    int msgSize = (int)msg.size();
+    if((write(sock, &msg[0], msgSize)) == WRITE_FAILED){
+        throw SERVER_ERR_SEND_FAILED;
     }
 }
