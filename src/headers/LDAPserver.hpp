@@ -39,9 +39,14 @@ class LdapServer{
         Database *db;
         int fileDescriptor;
         int sock;
+        void ldapCommunication();
         void ldapBind();
-        void ldapSearch();
+        void ldapSearch(ldap_msg_t &decodedMsg, bool readMsgFlag);
         void sendMessage(vector<char> msg);
+        void sendSearchResults(ldap_msg_t &searchRequest);
+        void sendResult(record_t &record, int msgId);
+        void sendSearchResDone(int msgId, int resultCode, string errorMessage);
+        bool getUnbind(ldap_msg_t &decodedMsg);
 };
 
 #endif

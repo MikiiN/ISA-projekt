@@ -10,14 +10,26 @@ Database::Database(string fileName){
 }
 
 record_t Database::search(filter_t &filter){
+    bool result;
+    record_t empty;
+    empty.uid = "";
     while(pos < data.size()){
-        if(matchFilter(data[pos], filter)){
+        try{
+            result = matchFilter(data[pos], filter);
+        }
+        catch(int err){
+            if(err == DATABASE_ERR_FILTER_COLUMN){
+                return empty;
+            }
+            else{
+                throw;
+            }
+        }
+        if(result){
             return data[pos++];
         }
         pos++;
     }
-    record_t empty;
-    empty.uid = "";
     return empty;
 }
 
@@ -49,29 +61,34 @@ void Database::loadData(string fileName){
 }
 
 bool Database::matchFilter(record_t &rec, filter_t &filter){
-    switch(filter.type){
-        case Fltr_and:
-            for(size_t i = 0; i < filter.childs.size(); i++){
-                if(!matchFilter(rec, filter.childs[i])){
-                    return false;
+    try{
+        switch(filter.type){
+            case Fltr_and:
+                for(size_t i = 0; i < filter.childs.size(); i++){
+                    if(!matchFilter(rec, filter.childs[i])){
+                        return false;
+                    }
                 }
-            }
-            return true;
-        case Fltr_or:
-            for(size_t i = 0; i < filter.childs.size(); i++){
-                if(matchFilter(rec, filter.childs[i])){
-                    return true;
+                return true;
+            case Fltr_or:
+                for(size_t i = 0; i < filter.childs.size(); i++){
+                    if(matchFilter(rec, filter.childs[i])){
+                        return true;
+                    }
                 }
-            }
-            return false;
-        case Fltr_not:
-            return !matchFilter(rec, filter.childs[0]);
-        case Fltr_str_eq:
-            return isStrEqual(rec, filter);
-        case Fltr_substr:
-            return matchSubstr(rec, filter);
-        default:
-            throw INTERNAL_ERR;
+                return false;
+            case Fltr_not:
+                return !matchFilter(rec, filter.childs[0]);
+            case Fltr_str_eq:
+                return isStrEqual(rec, filter);
+            case Fltr_substr:
+                return matchSubstr(rec, filter);
+            default:
+                throw INTERNAL_ERR;
+        }
+    }
+    catch(int err){
+        throw;
     }
 }
 
@@ -98,13 +115,28 @@ bool Database::matchSubstr(record_t &rec, filter_t &filter){
     for(size_t i = 0; i < filter.data.size(); i++){
         switch(filter.data[i].type){
             case Substr_start:
-                flag = matchSubstrBeginning(rec, filter.data[i], stringPos);
+                try{
+                    flag = matchSubstrBeginning(rec, filter.data[i], stringPos);
+                }
+                catch(int err){
+                    throw;
+                }
                 break;
             case Substr_contains:
-                flag = matchSubstrInside(rec, filter.data[i], stringPos);
+                try{
+                    flag = matchSubstrInside(rec, filter.data[i], stringPos);
+                }
+                catch(int err){
+                    throw;
+                }
                 break;
             case Substr_end:
-                flag = matchSubstrEnd(rec, filter.data[i], stringPos);
+                try{
+                    flag = matchSubstrEnd(rec, filter.data[i], stringPos);
+                }
+                catch(int err){
+                    throw;
+                }
                 break;
             default:
                 throw INTERNAL_ERR;
@@ -132,7 +164,7 @@ bool Database::matchSubstrBeginning(record_t &rec, filter_string_data_t &data, s
         compareValue = rec.email.substr(0, substrLength);
     }
     else{
-        throw DATABASE_ERR_FILTER_SUBSTRING;
+        throw DATABASE_ERR_FILTER_COLUMN;
     }
     strPos += substrLength;
     return !data.value.compare(compareValue);
@@ -150,7 +182,7 @@ bool Database::matchSubstrInside(record_t &rec, filter_string_data_t &data, size
         compareValue = rec.email.substr(strPos);
     }
     else{
-        throw DATABASE_ERR_FILTER_SUBSTRING;
+        throw DATABASE_ERR_FILTER_COLUMN;
     }
     size_t findPos = compareValue.find(data.value);
     if(findPos == string::npos){
@@ -177,7 +209,7 @@ bool Database::matchSubstrEnd(record_t &rec, filter_string_data_t &data, size_t 
         compareValue = rec.email.substr(endPos-substrLength, substrLength);
     }
     else{
-        throw DATABASE_ERR_FILTER_SUBSTRING;
+        throw DATABASE_ERR_FILTER_COLUMN;
     }
     if(((int) strPos) > endPos){
         throw DATABASE_ERR_FILTER_SUBSTRING; 
