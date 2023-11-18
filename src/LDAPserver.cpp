@@ -3,7 +3,12 @@
 LdapServer::LdapServer(int portNumber, string fileName){
     port = portNumber;
     file = fileName;
-    db = new Database(fileName);
+    try{
+        db = new Database(fileName);
+    }
+    catch(int err){
+        throw;
+    }
 }
 
 LdapServer::~LdapServer(){
@@ -55,7 +60,13 @@ void LdapServer::start(){
         }
         else if(pid == 0){ // child process
             close(fileDescriptor);
-            ldapCommunication();
+            try{
+                ldapCommunication();
+            }
+            catch(int err){
+                close(sock);
+                throw;
+            }
             close(sock);
             return;
         }
@@ -93,7 +104,6 @@ void LdapServer::ldapBind(){
     ldap_msg_t decodedMsg;
     ldap_msg_t responseMsg;
     if(ber.decode(buffer, decodedMsg)){
-        cout << "Error decode" << endl;
         responseMsg.BindResponse.resultCode = FAILED;
         responseMsg.BindResponse.errorMessage = "ERROR";
     }

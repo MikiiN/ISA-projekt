@@ -23,13 +23,37 @@ void printError(int errorCode){
             cerr << "Error: Socket creation failed" << endl;
             break;
         case SERVER_ERR_BIND_FAILED:
-            cerr << "Error: Bind" << endl;
+            cerr << "Error: Bind failed" << endl;
             break;
         case SERVER_ERR_LISTEN:
-            cerr << "Error: Listen" << endl;
+            cerr << "Error: Listen failed" << endl;
             break;
         case SERVER_ERR_ACCEPT_FAILED:
-            cerr << "Error: Accept" << endl;
+            cerr << "Error: Accept failed" << endl;
+            break;
+        case SERVER_ERR_FORK_FAILED:
+            cerr << "Error: Fork failed" << endl;
+            break;
+        case SERVER_ERR_SETSOCKOPT:
+            cerr << "Error: Setting socket options failed" << endl;
+            break;
+        case SERVER_ERR_SEND_FAILED:
+            cerr << "Error: Sending message failed" << endl;
+            break;
+        case SERVER_ERR_ENCODE_DECODE_FAILED:
+            cerr << "Error: Encoding or decoding message failed" << endl;
+            break;
+        case DATABASE_ERR_OPEN_FILE_FAILED:
+            cerr << "Error: Can't open the file" << endl;
+            break;
+        case DATABASE_ERR_FILTER_SUBSTRING:
+            cerr << "Error: Substring Filter" << endl;
+            break;
+        case DATABASE_ERR_FILTER_COLUMN:
+            cerr << "Error: Unknown database column" << endl;
+            break;
+        case INTERNAL_ERR:
+            cerr << "Error: Internal error" << endl;
             break;
         default:
             cerr << "Error: Unknown error" << endl;

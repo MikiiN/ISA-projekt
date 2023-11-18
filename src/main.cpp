@@ -26,8 +26,15 @@ int main(int argc, char *argv[]){
         printError(err);
         return err;
     }
-
-    server = new LdapServer(arg->getPortNumber(), arg->getFileName());
+    try{
+        server = new LdapServer(arg->getPortNumber(), arg->getFileName());
+    }
+    catch(int err){
+        printError(err);
+        delete server;
+        delete arg;
+        return err;
+    }
     signal(SIGINT, sigHandler);
     try{
         server->start();
