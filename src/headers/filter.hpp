@@ -1,3 +1,9 @@
+/**
+ * file: filter.hpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #ifndef FILTER_H
 #define FILTER_H
 

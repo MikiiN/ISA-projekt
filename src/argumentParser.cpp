@@ -1,3 +1,9 @@
+/**
+ * file: argumentParser.cpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #include "headers/argumentParser.hpp"
 #include "headers/error.hpp"
 

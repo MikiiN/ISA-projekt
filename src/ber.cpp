@@ -1,3 +1,9 @@
+/**
+ * file: ber.cpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #include "headers/ber.hpp"
 
 int BER::decode(vector<char> message, ldap_msg_t &resultMessage){

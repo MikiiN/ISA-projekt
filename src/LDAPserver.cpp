@@ -1,3 +1,9 @@
+/**
+ * file: LDAPserver.cpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #include "headers/LDAPserver.hpp"
 
 LdapServer::LdapServer(int portNumber, string fileName){
@@ -159,6 +165,10 @@ void LdapServer::ldapSearch(ldap_msg_t &decodedMsg, bool readMsgFlag){
                 throw;
             }
         }
+    }
+    // ignore other commands
+    if(decodedMsg.OpCode != LDAP_SEARCH_REQUEST){
+        return;
     }
     // send response
     try{

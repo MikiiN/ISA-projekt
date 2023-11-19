@@ -1,3 +1,9 @@
+/**
+ * file: argumentParser.hpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #ifndef ARG_PARSE_H
 #define ARG_PARSE_H
 

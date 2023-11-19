@@ -1,3 +1,9 @@
+/**
+ * file: error.hpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #ifndef ERROR_H
 #define ERROR_H
 
@@ -22,6 +28,10 @@
 
 #define INTERNAL_ERR 99
 
+/**
+ * @brief print error code message
+ * @param errorCode error code
+*/
 void printError(int errorCode);
 
 #endif

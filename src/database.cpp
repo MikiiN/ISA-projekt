@@ -1,3 +1,9 @@
+/**
+ * file: database.cpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #include "headers/database.hpp"
 
 Database::Database(string fileName){

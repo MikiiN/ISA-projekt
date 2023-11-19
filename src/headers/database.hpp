@@ -1,3 +1,9 @@
+/**
+ * file: database.hpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #ifndef DATABASE_H
 #define DATABASE_H
 

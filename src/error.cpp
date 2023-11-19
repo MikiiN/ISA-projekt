@@ -1,3 +1,9 @@
+/**
+ * file: error.cpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #include "headers/error.hpp"
 #include <iostream>
 

@@ -1,3 +1,9 @@
+/**
+ * file: LDAPserver.hpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #ifndef LDAP_SERVER_H
 #define LDAP_SERVER_H
 

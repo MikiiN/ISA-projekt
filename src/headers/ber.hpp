@@ -1,3 +1,9 @@
+/**
+ * file: ber.hpp
+ * author: Michal Žatečka
+ * login: xzatec02
+*/
+
 #ifndef BER_H
 #define BER_H
 
