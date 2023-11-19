@@ -18,7 +18,9 @@
 #define BUFFER_SIZE 512
 
 #define SUCCESS 0
-#define FAILED 1
+#define OPERATION_ERROR 1
+#define PROTOCOL_ERROR 2
+#define AUTH_METHOD_NOT_SUPPORTED 7
 
 #define WRITE_FAILED -1
 
@@ -29,8 +31,22 @@ class LdapServer{
     public:
         LdapServer(int portNumber, string fileName);
         ~LdapServer();
+        
+        /**
+         * @brief start LDAP server
+        */
         void start();
+
+        /**
+         * @brief get parent socket file descriptor
+         * @return parent socket file descriptor
+        */
         int getParentFD();
+
+        /**
+         * @brief get child socket file descriptor
+         * @return child socked file descriptor
+        */
         int getChildFD();
     private:
         int port;
@@ -39,13 +55,56 @@ class LdapServer{
         Database *db;
         int fileDescriptor;
         int sock;
+
+        /**
+         * @brief function controlling LDAP communication
+        */
         void ldapCommunication();
+
+        /**
+         * @brief function for LDAP bind
+        */
         void ldapBind();
+
+        /**
+         * @brief function for LDAP search operation
+         * @param decodedMsg reference on decoded LDAP message
+         * @param redMsgFlag if function have to read message
+        */
         void ldapSearch(ldap_msg_t &decodedMsg, bool readMsgFlag);
-        void sendMessage(vector<char> msg);
+
+        /**
+         * @brief function for sending message
+         * @param msg reference on message buffer
+        */
+        void sendMessage(vector<char> &msg);
+
+        /**
+         * @brief function for sending search results
+         * @param searchRequest reference on decoded search request message
+        */
         void sendSearchResults(ldap_msg_t &searchRequest);
+
+        /**
+         * @brief send single search result
+         * @param record reference on record from database
+         * @param msgId search request message ID 
+        */
         void sendResult(record_t &record, int msgId);
+
+        /**
+         * @brief send search result done message
+         * @param msgId search request message ID
+         * @param resultCode search result done message result code
+         * @param errorMessage search result done message error string
+        */
         void sendSearchResDone(int msgId, int resultCode, string errorMessage);
+
+        /**
+         * @brief function to check if server received unbind request
+         * @param decodedMsg reference on structure for decoded LDAP message
+         * @return true if server received unbind request, false if not
+        */
         bool getUnbind(ldap_msg_t &decodedMsg);
 };
 

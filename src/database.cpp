@@ -19,13 +19,14 @@ record_t Database::search(filter_t &filter){
         }
         catch(int err){
             if(err == DATABASE_ERR_FILTER_COLUMN){
+                // unknown database column
                 return empty;
             }
             else{
                 throw;
             }
         }
-        if(result){
+        if(result){ // return matching result
             return data[pos++];
         }
         pos++;
@@ -39,19 +40,23 @@ void Database::resetDbPosition(){
 
 void Database::loadData(string fileName){
     ifstream file(fileName);
-    if(!file.is_open()){
+    if(!file.is_open()){ // check if file is open
         throw DATABASE_ERR_OPEN_FILE_FAILED;
     }
     string line;
-    while(getline(file, line)){
+    while(getline(file, line)){ // get line from file
         istringstream stringStream(move(line));
         record_t record;
         string value;
+        // get common name value from line
         getline(stringStream, value, ';');
         record.commonName = move(value);
+        // get uid value from line
         getline(stringStream, value, ';');
         record.uid = move(value);
+        // get email value from line
         getline(stringStream, value, ';');
+        // remove CR from end of line
         if(isspace(value.back())){
             value.pop_back();
         }
@@ -83,6 +88,8 @@ bool Database::matchFilter(record_t &rec, filter_t &filter){
                 return isStrEqual(rec, filter);
             case Fltr_substr:
                 return matchSubstr(rec, filter);
+            case No_fltr:
+                return true;
             default:
                 throw INTERNAL_ERR;
         }

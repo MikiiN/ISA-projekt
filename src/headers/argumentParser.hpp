@@ -29,15 +29,55 @@ class ArgParse{
         int portNumber;
         string fileName;
         vector<bool> argSetFlags;
+        
+        /**
+         * @brief check number of arguments
+         * @param arg number of arguments
+         * @return true if number of arguments is correct, false if not
+        */
         bool checkArgCount(int argc);
+
+        /**
+         * @brief recognize given argument
+         * @param arg argument
+         * @return argument identification
+        */
         int recognizeArg(string arg);
+
+        /**
+         * @brief get port number from argument and save it in instance variable
+         * @param pNumber port number in string form
+         * @return true if pNumber is valid port number, false if not
+        */
         bool parsePortNumber(string pNumber);
+
+        /**
+         * @brief check if string is a number
+         * @param number string with number
+         * @return true if is number, false if not
+        */
         bool isNumber(string &number);
 
     public:
         ArgParse();
+
+        /**
+         * @brief parse command line arguments
+         * @param argc number of command line arguments
+         * @param argv array contains command line arguments
+        */
         void parse(int argc, char* argv[]);
+
+        /**
+         * @brief function to get port number
+         * @return number of port
+        */
         int getPortNumber();
+
+        /**
+         * @brief function to get file name
+         * @return file name
+        */
         string getFileName();
 };
 
