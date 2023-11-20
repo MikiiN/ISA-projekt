@@ -17,7 +17,7 @@ Má velkost jednoho bajtu a obsahuje informaci o typu hodnoty.
 
 #### Length
 Dělí se na krátkou a dlouhou formu. Krátká forma (nejvíce významný bit je 0) se používá pro hodnoty, jejichž délka se dá vyjádřit pomocí 7 bitů (tedy 0 až 255 bajtů).  
-![BER diagram krátká forma](/doc/img/BER_short_form.png "BER diagram krátká forma")
+![BER diagram krátká forma](/doc/img/BER_short_form.png "BER diagram krátká forma")  
 Dlouhá forma (nejvíce významný bit je 1) se používá pro hodnoty, jejichž délka se nedá vyjádřit pomocí 7 bitů. V tomto případě těchto 7 bitů obsahuje počet následujících bajtů, které obsahují délku hodnoty.
 ![BER diagram dlouhá forma](/doc/img/BER_long_form.png "BER diagram dlouhá forma")
 
@@ -166,7 +166,7 @@ Obsahuje struktury pro filtr.
 
 ## Testování
 Testování probíhalo ručně. Server byl spuštěn pomocí příkazu:
-> sudo ./isa-ldapserver -f ldapDB.csv
+> sudo ./isa-ldapserver -f testFiles/ldapDB.csv
 
 ### Testovací případy
 
@@ -369,7 +369,7 @@ ldap_sasl_interactive_bind: Authentication method not supported (7)
 ```
 
 #### Spuštění serveru na jiném než výchozím portu
-> sudo ./isa-ldapserver -p 4242 -f ldapDB.csv  
+> sudo ./isa-ldapserver -p 4242 -f testFiles/ldapDB.csv  
 > ldapsearch -x -H ldap://127.0.0.1 "(cn=Za\*ka\*Mich\*)"
 
 Výsledek:

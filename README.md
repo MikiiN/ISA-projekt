@@ -18,6 +18,10 @@ Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této
 ## Omezení
 
 ## Odevzdané soubory
+* doc/
+  * img/
+    * BER_long_form.png
+    * BER_short_form.png
 * obj/
 * src/
   * headers/
@@ -33,5 +37,8 @@ Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této
   * error.cpp
   * LDAPserver.cpp
   * main.cpp
+* testFiles/
+  * ldapDB.csv
 * Makefile
 * README.md
+* manual.md
