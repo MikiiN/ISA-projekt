@@ -29,9 +29,9 @@ Nejdříve klient musí navázat spojení s LDAP serverem pomocí zprávy **Bind
 
 ### Struktura LDAP zprávy
 ```
-SEKVENCE {
-    ID zprávy      ČÍSLO
-    Data zprávy protokolu VÝBĚR{
+SEQUENCE {
+    message ID       INTEGER
+    protocol data    CHOICE{
         Bind Request,
         Bind Response,
         Unbind Request,
@@ -389,3 +389,7 @@ mail: xzatec02@stud.fit.vutbr.cz
 
 
 ## Bibliografie
+* M. Wahl, S. Kille, and T. Howes, “RFC 2251: Lightweight Directory Access Protocol (v3),” IETF Datatracker, https://datatracker.ietf.org/doc/html/rfc2251. 
+* T. Howes, “RFC 2254: The string representation of ldap search filters,” IETF Datatracker, https://datatracker.ietf.org/doc/html/rfc2254
+* J. Sermersheim, “RFC 4511: Lightweight Directory Access Protocol (LDAP): The Protocol,” IETF Datatracker, https://datatracker.ietf.org/doc/html/rfc4511
+* “X.690,” Wikipedia, https://en.wikipedia.org/wiki/X.690#BER_encoding
