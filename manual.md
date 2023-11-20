@@ -17,9 +17,9 @@ Má velkost jednoho bajtu a obsahuje informaci o typu hodnoty.
 
 #### Length
 Dělí se na krátkou a dlouhou formu. Krátká forma (nejvíce významný bit je 0) se používá pro hodnoty, jejichž délka se dá vyjádřit pomocí 7 bitů (tedy 0 až 255 bajtů).  
-![BER diagram krátká forma](/doc/img/BER_short_form.png "BER diagram krátká forma")  
+![BER diagram krátká forma](./doc/img/BER_short_form.png "BER diagram krátká forma")  
 Dlouhá forma (nejvíce významný bit je 1) se používá pro hodnoty, jejichž délka se nedá vyjádřit pomocí 7 bitů. V tomto případě těchto 7 bitů obsahuje počet následujících bajtů, které obsahují délku hodnoty.
-![BER diagram dlouhá forma](/doc/img/BER_long_form.png "BER diagram dlouhá forma")
+![BER diagram dlouhá forma](./doc/img/BER_long_form.png "BER diagram dlouhá forma")
 
 #### Value
 Obsahuje hodnotu rozdělenou na jednotlivé bajty, nebo může obsahovat další vnořené TLV.

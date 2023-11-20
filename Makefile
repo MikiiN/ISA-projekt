@@ -1,9 +1,9 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
-OBJ_FOLDER = obj
+OBJ_FOLDER = ./obj
 OBJECTS = $(OBJ_FOLDER)/argumentParser.o $(OBJ_FOLDER)/ber.o $(OBJ_FOLDER)/database.o $(OBJ_FOLDER)/error.o $(OBJ_FOLDER)/LDAPserver.o
-SRC_FOLDER = src
-HEADER_FOLDER = src/headers
+SRC_FOLDER = ./src
+HEADER_FOLDER = ./src/headers
 TARGET = isa-ldapserver 
 
 $(TARGET): $(OBJECTS) $(SRC_FOLDER)/main.cpp

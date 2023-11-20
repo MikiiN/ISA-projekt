@@ -44,3 +44,4 @@ Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této
 * Makefile
 * README.md
 * manual.md
+* manual.pdf
