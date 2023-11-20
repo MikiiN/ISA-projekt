@@ -34,3 +34,4 @@ Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této
   * LDAPserver.cpp
   * main.cpp
 * Makefile
+* README.md
