@@ -97,6 +97,22 @@ class Database{
          * @return true if record match filter, false if not  
         */
         bool matchSubstrEnd(record_t &rec, filter_string_data_t &data, size_t &strPos);
+
+        /**
+         * @brief function for compare case insensitive strings
+         * @param s1 first string
+         * @param s2 second string
+         * @return true if strings are equal, false if not
+        */
+        bool stringCompare(string s1, string s2);
+
+        /**
+         * @brief find substring in string (case insensitive)
+         * @param str string
+         * @param substr substring
+         * @return substring position in string 
+        */
+        size_t stringFind(string str, string substr);
 };
 
 #endif

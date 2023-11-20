@@ -108,14 +108,14 @@ bool Database::matchFilter(record_t &rec, filter_t &filter){
 bool Database::isStrEqual(record_t &rec, filter_t &filter){
     string column = filter.data[0].column;
     string value = filter.data[0].value; 
-    if(!column.compare("uid")){
-        return !value.compare(rec.uid);
+    if(stringCompare(column, "uid")){ 
+        return stringCompare(value, rec.uid);
     }
-    else if(!column.compare("cn")){
-        return !value.compare(rec.commonName);
+    else if(stringCompare(column, "cn")){
+        return stringCompare(value, rec.commonName);
     }
-    else if(!column.compare("mail")){
-        return !value.compare(rec.email);
+    else if(stringCompare(column, "mail") || stringCompare(column, "email")){
+        return stringCompare(value, rec.email);
     }
     else{
         throw DATABASE_ERR_FILTER_COLUMN;
@@ -167,37 +167,37 @@ bool Database::matchSubstrBeginning(record_t &rec, filter_string_data_t &data, s
     if(strPos != 0){
         throw DATABASE_ERR_FILTER_SUBSTRING;
     }
-    if(!data.column.compare("uid")){
+    if(stringCompare(data.column, "uid")){
         compareValue = rec.uid.substr(0, substrLength);
     }
-    else if(!data.column.compare("cn")){
+    else if(stringCompare(data.column, "cn")){
         compareValue = rec.commonName.substr(0, substrLength);
     }
-    else if(!data.column.compare("mail")){
+    else if(stringCompare(data.column, "mail") || stringCompare(data.column, "email")){
         compareValue = rec.email.substr(0, substrLength);
     }
     else{
         throw DATABASE_ERR_FILTER_COLUMN;
     }
     strPos += substrLength;
-    return !data.value.compare(compareValue);
+    return stringCompare(data.value, compareValue);
 }
 
 bool Database::matchSubstrInside(record_t &rec, filter_string_data_t &data, size_t &strPos){
     string compareValue;
-    if(!data.column.compare("uid")){
+    if(stringCompare(data.column, "uid")){
         compareValue = rec.uid.substr(strPos);
     }
-    else if(!data.column.compare("cn")){
+    else if(stringCompare(data.column, "cn")){
         compareValue = rec.commonName.substr(strPos);
     }
-    else if(!data.column.compare("mail")){
+    else if(stringCompare(data.column, "mail") || stringCompare(data.column, "email")){
         compareValue = rec.email.substr(strPos);
     }
     else{
         throw DATABASE_ERR_FILTER_COLUMN;
     }
-    size_t findPos = compareValue.find(data.value);
+    size_t findPos = stringFind(compareValue, data.value);
     if(findPos == string::npos){
         return false;
     }
@@ -209,15 +209,15 @@ bool Database::matchSubstrEnd(record_t &rec, filter_string_data_t &data, size_t 
     string compareValue;
     int substrLength = data.value.size();
     int endPos;
-    if(!data.column.compare("uid")){
+    if(stringCompare(data.column, "uid")){
         endPos = rec.uid.size();
         compareValue = rec.uid.substr(endPos-substrLength, substrLength);
     }
-    else if(!data.column.compare("cn")){
+    else if(stringCompare(data.column, "cn")){
         endPos = rec.commonName.size();
         compareValue = rec.commonName.substr(endPos-substrLength, substrLength);
     }
-    else if(!data.column.compare("mail")){
+    else if(stringCompare(data.column, "mail") || stringCompare(data.column, "email")){
         endPos = rec.email.size();
         compareValue = rec.email.substr(endPos-substrLength, substrLength);
     }
@@ -227,5 +227,27 @@ bool Database::matchSubstrEnd(record_t &rec, filter_string_data_t &data, size_t 
     if(((int) strPos) > endPos){
         throw DATABASE_ERR_FILTER_SUBSTRING; 
     }
-    return !data.value.compare(compareValue);
+    return stringCompare(data.value, compareValue);
+}
+
+bool Database::stringCompare(string s1, string s2){
+    // to lower case
+    for(auto &c : s1){
+        c = tolower(c);
+    }
+    for(auto &c : s2){
+        c = tolower(c);
+    }
+    return !s1.compare(s2);
+}
+
+size_t Database::stringFind(string str, string substr){
+    // to lower case
+    for(auto &c : str){
+        c = tolower(c);
+    }
+    for(auto &c : substr){
+        c = tolower(c);
+    }
+    return str.find(substr);
 }

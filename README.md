@@ -16,6 +16,8 @@ Program nejdříve zpracuje argumenty příkazové řádky a ověří jejich pla
 Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této zprávy odešle klientovi **Bind response** a čeká na **Search request** (ostatní příkazy ignoruje) dokud nepřijme **Unbind request**, po které ukončí komunikaci.
 
 ## Omezení
+* Při načítání dat ze souboru neprobíhá žádná kontrola validity dat
+* Server nevyvolá chybu v případě, že by obdržel nevalidní filtr například ve tvaru "(cn=\*Test\*)(uid=test)"
 
 ## Odevzdané soubory
 * doc/
