@@ -1,8 +1,5 @@
 # ISA-projekt
-
-* Login: xzatec02
-* Jméno a příjmení: Michal Žatečka
-* Datum: 20.11.2023
+Projekt do předmětu ISA na VUT FIT. Jedná se o implementaci LDAP serveru, který umožňuje pouze vyhledávání záznamů v databázi.
 
 ## Příklady spuštění
 > sudo ./isa-ldapserver -p 4200 -f název_souboru   
@@ -45,3 +42,6 @@ Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této
 * README.md
 * manual.md
 * manual.pdf
+
+* Jméno a příjmení: Michal Žatečka
+* Datum: 20.11.2023
