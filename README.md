@@ -42,6 +42,3 @@ Nejdříve očekává zprávu **Bind request**, po úspěšném příjetí této
 * README.md
 * manual.md
 * manual.pdf
-
-* Jméno a příjmení: Michal Žatečka
-* Datum: 20.11.2023
